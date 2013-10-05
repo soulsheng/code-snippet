@@ -49,6 +49,7 @@
 # include <limits.h>
 #if _WIN32
 # include <time.h>
+# include <omp.h>
 #else
 # include <sys/time.h>
 #endif
@@ -178,7 +179,7 @@
 # endif
 
 #ifndef STREAM_TYPE
-#define STREAM_TYPE double
+#define STREAM_TYPE float//double
 #endif
 
 static STREAM_TYPE	a[STREAM_ARRAY_SIZE+OFFSET],
@@ -270,7 +271,7 @@ main()
 
     /* Get initial value for system clock. */
 #pragma omp parallel for
-    for (j=0; j<STREAM_ARRAY_SIZE; j++) {
+    for (int j=0; j<STREAM_ARRAY_SIZE; j++) {
 	    a[j] = 1.0;
 	    b[j] = 2.0;
 	    c[j] = 0.0;
@@ -289,7 +290,7 @@ main()
 
     t = mysecond();
 #pragma omp parallel for
-    for (j = 0; j < STREAM_ARRAY_SIZE; j++)
+    for (int j = 0; j < STREAM_ARRAY_SIZE; j++)
 		a[j] = 2.0E0 * a[j];
     t = 1.0E6 * (mysecond() - t);
 
@@ -316,7 +317,7 @@ main()
         tuned_STREAM_Copy();
 #else
 #pragma omp parallel for
-	for (j=0; j<STREAM_ARRAY_SIZE; j++)
+	for (int j=0; j<STREAM_ARRAY_SIZE; j++)
 	    c[j] = a[j];
 #endif
 	times[0][k] = mysecond() - times[0][k];
@@ -326,7 +327,7 @@ main()
         tuned_STREAM_Scale(scalar);
 #else
 #pragma omp parallel for
-	for (j=0; j<STREAM_ARRAY_SIZE; j++)
+	for (int j=0; j<STREAM_ARRAY_SIZE; j++)
 	    b[j] = scalar*c[j];
 #endif
 	times[1][k] = mysecond() - times[1][k];
@@ -336,7 +337,7 @@ main()
         tuned_STREAM_Add();
 #else
 #pragma omp parallel for
-	for (j=0; j<STREAM_ARRAY_SIZE; j++)
+	for (int j=0; j<STREAM_ARRAY_SIZE; j++)
 	    c[j] = a[j]+b[j];
 #endif
 	times[2][k] = mysecond() - times[2][k];
@@ -346,7 +347,7 @@ main()
         tuned_STREAM_Triad(scalar);
 #else
 #pragma omp parallel for
-	for (j=0; j<STREAM_ARRAY_SIZE; j++)
+	for (int j=0; j<STREAM_ARRAY_SIZE; j++)
 	    a[j] = b[j]+scalar*c[j];
 #endif
 	times[3][k] = mysecond() - times[3][k];
