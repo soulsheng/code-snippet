@@ -41,12 +41,17 @@
 /*  5. Absolutely no warranty is expressed or implied.                   */
 /*-----------------------------------------------------------------------*/
 # include <stdio.h>
+#if !_WIN32
 # include <unistd.h>
+#endif
 # include <math.h>
 # include <float.h>
 # include <limits.h>
+#if _WIN32
+# include <time.h>
+#else
 # include <sys/time.h>
-
+#endif
 /*-----------------------------------------------------------------------
  * INSTRUCTIONS:
  *
@@ -210,7 +215,7 @@ main()
     int			quantum, checktick();
     int			BytesPerWord;
     int			k;
-    ssize_t		j;
+    size_t		j;
     STREAM_TYPE		scalar;
     double		t, times[4][NTIMES];
 
@@ -411,7 +416,17 @@ checktick()
     }
 
 
+#if _WIN32
+#include <windows.h>
 
+double mysecond()
+{
+	unsigned __int64 nCtr = 0, nFreq = 0;
+	QueryPerformanceFrequency((LARGE_INTEGER *) &nFreq);
+	QueryPerformanceCounter((LARGE_INTEGER *) &nCtr);
+	return nCtr/(double)nFreq;
+}
+#else
 /* A gettimeofday routine to give access to the wall
    clock timer on most UNIX-like systems.  */
 
@@ -426,6 +441,7 @@ double mysecond()
         i = gettimeofday(&tp,&tzp);
         return ( (double) tp.tv_sec + (double) tp.tv_usec * 1.e-6 );
 }
+#endif
 
 #ifndef abs
 #define abs(a) ((a) >= 0 ? (a) : -(a))
@@ -436,7 +452,7 @@ void checkSTREAMresults ()
 	STREAM_TYPE aSumErr,bSumErr,cSumErr;
 	STREAM_TYPE aAvgErr,bAvgErr,cAvgErr;
 	double epsilon;
-	ssize_t	j;
+	size_t	j;
 	int	k,ierr,err;
 
     /* reproduce initialization */
