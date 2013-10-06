@@ -53,6 +53,9 @@
 #else
 # include <sys/time.h>
 #endif
+
+#define _MICRO_SECOND
+
 /*-----------------------------------------------------------------------
  * INSTRUCTIONS:
  *
@@ -420,6 +423,23 @@ checktick()
 #if _WIN32
 #include <windows.h>
 
+#ifdef _MICRO_SECOND
+__declspec(naked)
+	unsigned __int64 __cdecl rdtsc(void)	//The __cdecl is probably redundant in most cases
+{
+	__asm
+	{
+		rdtsc;
+		ret;  // return value in EDX:EAX
+	}
+}
+
+double mysecond()
+{
+	unsigned __int64 nFreq = 2930000000L;
+	return (double)rdtsc()/nFreq;
+}
+#else
 double mysecond()
 {
 	unsigned __int64 nCtr = 0, nFreq = 0;
@@ -427,6 +447,8 @@ double mysecond()
 	QueryPerformanceCounter((LARGE_INTEGER *) &nCtr);
 	return nCtr/(double)nFreq;
 }
+#endif
+
 #else
 /* A gettimeofday routine to give access to the wall
    clock timer on most UNIX-like systems.  */
