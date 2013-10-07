@@ -55,7 +55,11 @@
 #endif
 
 #define _MICRO_SECOND
+#define TUNED
 
+#ifdef TUNED
+#include <xmmintrin.h>
+#endif
 /*-----------------------------------------------------------------------
  * INSTRUCTIONS:
  *
@@ -185,6 +189,9 @@
 #define STREAM_TYPE float//double
 #endif
 
+#ifdef TUNED
+__declspec(align(16)) 
+#endif
 static STREAM_TYPE	a[STREAM_ARRAY_SIZE+OFFSET],
 			b[STREAM_ARRAY_SIZE+OFFSET],
 			c[STREAM_ARRAY_SIZE+OFFSET];
@@ -591,33 +598,31 @@ void checkSTREAMresults ()
 /* stubs for "tuned" versions of the kernels */
 void tuned_STREAM_Copy()
 {
-	ssize_t j;
+	__m128 *c4 = (__m128 *)c;
+	__m128 *a4 = (__m128 *)a;
 #pragma omp parallel for
-        for (j=0; j<STREAM_ARRAY_SIZE; j++)
-            c[j] = a[j];
+        for (int j=0; j<STREAM_ARRAY_SIZE/4; j++)
+            c4[j] = a4[j];
 }
 
 void tuned_STREAM_Scale(STREAM_TYPE scalar)
 {
-	ssize_t j;
 #pragma omp parallel for
-	for (j=0; j<STREAM_ARRAY_SIZE; j++)
+	for (int j=0; j<STREAM_ARRAY_SIZE; j++)
 	    b[j] = scalar*c[j];
 }
 
 void tuned_STREAM_Add()
 {
-	ssize_t j;
 #pragma omp parallel for
-	for (j=0; j<STREAM_ARRAY_SIZE; j++)
+	for (int j=0; j<STREAM_ARRAY_SIZE; j++)
 	    c[j] = a[j]+b[j];
 }
 
 void tuned_STREAM_Triad(STREAM_TYPE scalar)
 {
-	ssize_t j;
 #pragma omp parallel for
-	for (j=0; j<STREAM_ARRAY_SIZE; j++)
+	for (int j=0; j<STREAM_ARRAY_SIZE; j++)
 	    a[j] = b[j]+scalar*c[j];
 }
 /* end of stubs for the "tuned" versions of the kernels */
