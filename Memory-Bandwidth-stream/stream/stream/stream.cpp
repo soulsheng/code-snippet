@@ -56,7 +56,9 @@
 
 #define _MICRO_SECOND
 #define TUNED
-#define ALGORITHM_SQRT
+#define ALGORITHM_TEST	2// 0-仿存, 1-SQRT开方, 2-LENGTH向量求模
+//#define ALGORITHM_TIMER 
+#define ENABLE_SSE
 
 #ifdef TUNED
 #include <xmmintrin.h>
@@ -603,15 +605,31 @@ void checkSTREAMresults ()
 /* stubs for "tuned" versions of the kernels */
 void tuned_STREAM_Copy()
 {
+#ifdef ENABLE_SSE
 	__m128 *c4 = (__m128 *)c;
 	__m128 *a4 = (__m128 *)a;
 #pragma omp parallel for
-        for (int j=0; j<STREAM_ARRAY_SIZE/4; j++)
-#ifdef ALGORITHM_SQRT
-			c4[j] = _mm_sqrt_ps( a4[j] );
+    for (int j=0; j<STREAM_ARRAY_SIZE/4; j++) 
+		c4[j] = _mm_sqrt_ps( a4[j] );
 #else
-            c4[j] = a4[j];
-#endif
+#pragma omp parallel for
+	for (int j=1; j<STREAM_ARRAY_SIZE; j++) 
+	{
+#if ALGORITHM_TEST==1
+	#ifndef ALGORITHM_TIMER
+		c[j] = sqrtf( b[j] );
+	#else
+		float c1 = sqrtf(j);
+		if (c1<=0.5)
+		{
+			c[j] = c1;
+		}
+	#endif
+#else
+		c[j] = a[j];
+#endif // ALGORITHM_TEST
+	}
+#endif // ENABLE_SSE
 }
 
 void tuned_STREAM_Scale(STREAM_TYPE scalar)
@@ -623,9 +641,34 @@ void tuned_STREAM_Scale(STREAM_TYPE scalar)
 
 void tuned_STREAM_Add()
 {
+#ifdef ENABLE_SSE
+	__m128 *c4 = (__m128 *)c;
+	__m128 *a4 = (__m128 *)a;
+	__m128 *b4 = (__m128 *)b;
+#pragma omp parallel for
+	for (int j=0; j<STREAM_ARRAY_SIZE/4; j++)
+	{
+		c4[j] = _mm_sqrt_ps( _mm_add_ps( _mm_mul_ps(a4[j],a4[j]), _mm_mul_ps(b4[j],b4[j]) ) );
+	}
+#else
 #pragma omp parallel for
 	for (int j=0; j<STREAM_ARRAY_SIZE; j++)
-	    c[j] = a[j]+b[j];
+	{
+#if ALGORITHM_TEST==2
+	#ifndef ALGORITHM_TIMER
+		c[j] = sqrtf( a[j]*a[j] + b[j]*b[j] );
+	#else
+			float c1 = sqrtf((float)j*(float)j+2.0f);
+			if (c1<=0.5)
+			{
+				c[j] = c1;
+			}
+	#endif
+#else
+		c[j] = a[j] + b[j];
+#endif
+	}
+#endif
 }
 
 void tuned_STREAM_Triad(STREAM_TYPE scalar)
