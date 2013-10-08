@@ -56,6 +56,7 @@
 
 #define _MICRO_SECOND
 #define TUNED
+#define ALGORITHM_SQRT
 
 #ifdef TUNED
 #include <xmmintrin.h>
@@ -328,7 +329,11 @@ main()
 #else
 #pragma omp parallel for
 	for (int j=0; j<STREAM_ARRAY_SIZE; j++)
-	    c[j] = a[j];
+#ifdef ALGORITHM_SQRT
+		c[j] = sqrtf( a[j] );
+#else
+		c[j] = a[j];
+#endif
 #endif
 	times[0][k] = mysecond() - times[0][k];
 	
@@ -602,7 +607,11 @@ void tuned_STREAM_Copy()
 	__m128 *a4 = (__m128 *)a;
 #pragma omp parallel for
         for (int j=0; j<STREAM_ARRAY_SIZE/4; j++)
+#ifdef ALGORITHM_SQRT
+			c4[j] = _mm_sqrt_ps( a4[j] );
+#else
             c4[j] = a4[j];
+#endif
 }
 
 void tuned_STREAM_Scale(STREAM_TYPE scalar)
